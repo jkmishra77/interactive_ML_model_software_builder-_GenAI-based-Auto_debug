@@ -5,7 +5,7 @@ from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def codegen_node_streamlit(state: AgentState) -> AgentState:
+def codegen_node(state: AgentState) -> AgentState:
     try:
         st.subheader("⚙️ Code Generation Node")
 

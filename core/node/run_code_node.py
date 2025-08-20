@@ -2,6 +2,7 @@ import streamlit as st
 import subprocess
 import tempfile
 import os
+from datetime import datetime
 from core.state import AgentState
 from core.utils.logger import get_logger
 
@@ -9,8 +10,10 @@ logger = get_logger(__name__)
 
 def run_code_subprocess(state: AgentState) -> AgentState:
     code = state.generated_code
+    timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
+
     st.subheader("🚀 Running Generated Code")
-    st.code(code, language="python")
+    st.code(code, language="python", key=f"generated_code_{timestamp}")
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
         f.write(code)
@@ -25,9 +28,9 @@ def run_code_subprocess(state: AgentState) -> AgentState:
             "success": 1
         }
         st.success("✅ Code executed successfully.")
-        st.text_area("📤 Standard Output", result.stdout, height=200)
+        st.text_area("📤 Standard Output", result.stdout, height=200, key=f"stdout_{timestamp}")
         if result.stderr:
-            st.text_area("⚠️ Standard Error", result.stderr, height=200)
+            st.text_area("⚠️ Standard Error", result.stderr, height=200, key=f"stderr_{timestamp}")
     except Exception as e:
         execution_result = {
             "stdout": "",
@@ -36,7 +39,7 @@ def run_code_subprocess(state: AgentState) -> AgentState:
             "success": 0
         }
         st.error("❌ Error during code execution.")
-        st.text_area("⚠️ Exception", str(e), height=200)
+        st.text_area("⚠️ Exception", str(e), height=200, key=f"exception_{timestamp}")
     finally:
         os.remove(path)
 

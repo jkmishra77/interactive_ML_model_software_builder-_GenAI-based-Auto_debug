@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from core.state import AgentState
 from llm.query import query_llm
 from core.utils.logger import get_logger
@@ -9,11 +10,14 @@ def goal_and_model_handler(state: AgentState) -> AgentState:
     try:
         st.subheader("🎯 Define Business Goal and Select Model")
 
-        goal_key = "goal_input"
+        timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
+        goal_key = f"goal_input_{timestamp}"
+
         if not state.model_feedback:
             goal_input = st.text_input(
                 "Describe your business goal:",
-                value=st.session_state.get(goal_key, "")
+                value=st.session_state.get(goal_key, ""),
+                key=goal_key
             )
             if goal_input:
                 st.session_state[goal_key] = goal_input

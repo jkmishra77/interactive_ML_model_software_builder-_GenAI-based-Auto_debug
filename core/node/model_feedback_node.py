@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from core.state import AgentState
 from core.utils.logger import get_logger
 
@@ -9,11 +10,14 @@ def model_feedback_node(state: AgentState) -> AgentState:
         st.subheader("🧠 Suggested Model Meta")
         st.code(state.model_meta, language="text")
 
-        feedback_key = "model_feedback"
+        timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
+        feedback_key = f"model_feedback_{timestamp}"
+
         with st.form("model_feedback_form"):
             feedback = st.text_input(
                 "Enter '1' to agree or provide feedback to refine the model:",
-                value=st.session_state.get(feedback_key, "")
+                value=st.session_state.get(feedback_key, ""),
+                key=feedback_key
             )
             submitted = st.form_submit_button("Submit Feedback")
 

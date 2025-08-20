@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from core.state import AgentState
 from llm.query import query_llm
 from core.utils.logger import get_logger  
@@ -8,7 +9,8 @@ logger = get_logger(__name__)
 def code_feedback_node(state: AgentState) -> AgentState:
     try:
         instructions = ""
-        feedback_key = "code_feedback"
+        timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
+        feedback_key = f"code_feedback_{timestamp}"
 
         with st.form("code_feedback_form"):
             st.subheader("🧪 Review Generated Code")
@@ -16,7 +18,8 @@ def code_feedback_node(state: AgentState) -> AgentState:
 
             feedback = st.text_input(
                 "Enter '1' to accept the code or provide feedback to refine it:",
-                value=st.session_state.get(feedback_key, "")
+                value=st.session_state.get(feedback_key, ""),
+                key=feedback_key
             )
             submitted = st.form_submit_button("Submit Feedback")
 

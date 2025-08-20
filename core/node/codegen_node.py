@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 from core.state import AgentState
 from llm.query import query_llm
 from core.utils.logger import get_logger
@@ -37,8 +38,11 @@ Don't include any quotes or reply lines. Start directly from import.
 """
         processed_code = query_llm(prompt2).strip()
 
+        timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
+        code_key = f"generated_code_{timestamp}"
+
         st.success("✅ Code generated successfully.")
-        st.code(processed_code, language="python")
+        st.code(processed_code, language="python", key=code_key)
 
         return AgentState(
             goal=state.goal,

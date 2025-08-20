@@ -39,6 +39,6 @@ def code_feedback_node(state: AgentState) -> AgentState:
         )
 
     except Exception as e:
-        logger.error(f"Error in code_feedback_node_streamlit: {e}")
+        logger.error(f"Error in code_feedback_node: {e}")
         st.error("⚠️ Error during code feedback processing.")
         return state

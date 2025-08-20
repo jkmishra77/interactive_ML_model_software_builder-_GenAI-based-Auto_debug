@@ -3,11 +3,11 @@ import logging
 from langgraph.graph import StateGraph, END, START  
 from core.state import AgentState
 from core.node import (
-    goal_and_model_handler_streamlit,
-    model_feedback_node_streamlit,
-    codegen_node_streamlit,
-    code_feedback_node_streamlit,
-    run_code_subprocess_streamlit
+    goal_and_model_handler,
+    model_feedback_node,
+    codegen_node,
+    code_feedback_node,
+    run_code_subprocess
 )
 from core.router import model_router, codegen_router, run_code_router
 from core.utils.logger import get_logger
@@ -21,11 +21,11 @@ class AIBuilderAgent:
 
     def _build_workflow(self):
         # Add Streamlit-compatible nodes
-        self.workflow.add_node("goal_and_model_handler", goal_and_model_handler_streamlit)
-        self.workflow.add_node("model_feedback", model_feedback_node_streamlit)
-        self.workflow.add_node("codegen_node", codegen_node_streamlit)
-        self.workflow.add_node("code_feedback_node", code_feedback_node_streamlit)
-        self.workflow.add_node("run_code_subprocess", run_code_subprocess_streamlit)
+        self.workflow.add_node("goal_and_model_handler", goal_and_model_handler)
+        self.workflow.add_node("model_feedback", model_feedback_node)
+        self.workflow.add_node("codegen_node", codegen_node)
+        self.workflow.add_node("code_feedback_node", code_feedback_node)
+        self.workflow.add_node("run_code_subprocess", run_code_subprocess)
 
         # Add edges
         self.workflow.add_edge(START, "goal_and_model_handler")

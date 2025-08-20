@@ -51,6 +51,6 @@ Don't include any quotes or reply lines. Start directly from import.
         )
 
     except Exception as e:
-        logger.error(f"Error in codegen_node_streamlit: {e}")
+        logger.error(f"Error in codegen_node: {e}")
         st.error("⚠️ Error during code generation.")
         return state

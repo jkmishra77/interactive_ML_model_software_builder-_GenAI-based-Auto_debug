@@ -38,6 +38,6 @@ def goal_and_model_handler(state: AgentState) -> AgentState:
         )
 
     except Exception as e:
-        logger.error(f"Error in goal_and_model_handler_streamlit: {e}")
+        logger.error(f"Error in goal_and_model_handler: {e}")
         st.error("⚠️ Error while processing goal and model selection.")
         return state

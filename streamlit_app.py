@@ -8,7 +8,7 @@ from backend import (
 )
 
 st.set_page_config(page_title="AI Software Builder", layout="wide")
-st.title("🚀 AI Software Builder")
+st.title("AI Software Builder")
 
 # Initialize session state
 if 'state' not in st.session_state:
@@ -21,7 +21,7 @@ current_step = st.session_state.current_step
 
 # Step 1: Goal Input (Node 1)
 if current_step == 1:
-    st.subheader("🎯 Step 1: Define Your Goal")
+    st.subheader(" Step 1: Define Your Goal")
     
     if not state.goal:
         goal = st.text_input("Welcome! Please describe your business goal:")
@@ -36,7 +36,7 @@ if current_step == 1:
 
 # Step 2: Model Suggestion & Feedback (Nodes 1 + 2)
 elif current_step == 2:
-    st.subheader("🤖 Step 2: Model Suggestion")
+    st.subheader(" Step 2: Model Suggestion")
     
     # Generate model suggestion (Node 1)
     if not state.model_meta:
@@ -114,22 +114,22 @@ elif current_step == 4:
     
     st.write("**Execution Results:**")
     if state.execution_result.get("stdout"):
-        st.success("✅ Output:")
+        st.success(" Output:")
         st.code(state.execution_result["stdout"])
     if state.execution_result.get("stderr"):
-        st.error("❌ Errors:")
+        st.error(" Errors:")
         st.code(state.execution_result["stderr"])
     
     # Handle execution result routing
     if state.execution_result.get("success") == 1:
-        st.success("🎉 Execution successful!")
-        if st.button("🏁 Finish"):
+        st.success(" Execution successful!")
+        if st.button(" Finish"):
             st.session_state.state = AgentState()
             st.session_state.current_step = 1
             st.rerun()
     else:
-        st.warning("⚠️ Execution failed - regenerating code")
-        if st.button("🔄 Retry Code Generation"):
+        st.warning(" Execution failed - regenerating code")
+        if st.button(" Retry Code Generation"):
             state.generated_code = ""
             state.execution_result = {}
             st.session_state.current_step = 3
@@ -145,5 +145,5 @@ steps = [
 ]
 
 for step_name, completed in steps:
-    status = "✅" if completed else "⏳"
+    status = "ok" if completed else "not ok"
     st.sidebar.write(f"{status} {step_name}")

@@ -18,14 +18,7 @@ logger = logging.getLogger("AI_Software_Builder")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
 
-class AgentState(BaseModel):
-    goal: str = ""
-    model_meta: str = ""
-    model_feedback: str = ""
-    code_feedback: str = ""
-    generated_code: str = ""
-    instructions: str = ""
-    execution_result: Dict = Field(default_factory=dict)
+
 
 # Initialize Groq client
 try:

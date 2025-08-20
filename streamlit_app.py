@@ -145,5 +145,5 @@ steps = [
 ]
 
 for step_name, completed in steps:
-    status = "ok" if completed else "not ok"
+    status = "Completed" if completed else "Pending"
     st.sidebar.write(f"{status} {step_name}")

@@ -10,35 +10,44 @@ def model_feedback_node(state: AgentState) -> AgentState:
         st.subheader("🧠 Suggested Model Meta")
         st.code(state.model_meta, language="text")
 
-        # Initialize step tracker
+        # Ensure step tracker exists
         if "feedback_step" not in st.session_state:
             st.session_state.feedback_step = 1
 
-        # Step 1: Confirm model meta visibility
+        # Define a stable feedback_key for this session
+        if "feedback_key" not in st.session_state:
+            st.session_state.feedback_key = f"model_feedback_{uuid4().hex}"
+
+        feedback_key = st.session_state.feedback_key
+
+        # Step 1: Get feedback
         if st.session_state.feedback_step == 1:
-            if st.button("Proceed to Feedback"):
-                st.session_state.feedback_step = 2
+            feedback = st.text_input(
+                "Enter '1' to agree or provide feedback to refine the model:",
+                value=st.session_state.get("saved_feedback", ""),
+                key=feedback_key
+            )
 
-        # Step 2: Feedback Form
-        if st.session_state.feedback_step >= 2:
-            feedback_key = f"model_feedback_{uuid4().hex}"
-            with st.form(key=f"model_feedback_form_{uuid4().hex}"):
-                feedback = st.text_input(
-                    "Enter '1' to agree or provide feedback to refine the model:",
-                    value=st.session_state.get(feedback_key, ""),
-                    key=feedback_key
-                )
-                submitted = st.form_submit_button("Submit Feedback")
+            if feedback:
+                if st.button("Next: Confirm Feedback", key="confirm_feedback_btn"):
+                    st.session_state["saved_feedback"] = feedback
+                    st.session_state.feedback_step = 2
+                    logger.info(f"User feedback: {feedback}")
+                    state.model_feedback = feedback
 
-            if submitted:
-                st.session_state[feedback_key] = feedback
-                logger.info(f"User feedback: {feedback}")
-                st.session_state.feedback_step = 3  # Optional: advance to next node
+        # Step 2: Show confirmation
+        if st.session_state.feedback_step == 2:
+            st.success("✅ Feedback confirmed.")
+            st.write(f"Model Feedback: `{st.session_state.get('saved_feedback', '')}`")
 
         return AgentState(
             goal=state.goal,
             model_meta=state.model_meta,
-            model_feedback=st.session_state.get(feedback_key, "")
+            model_feedback=state.model_feedback,
+            code_feedback=state.code_feedback,
+            generated_code=state.generated_code,
+            instructions=state.instructions,
+            execution_result=state.execution_result
         )
 
     except Exception as e:

@@ -1,42 +1,40 @@
 import streamlit as st
-import logging
-from core.agent import AIBuilderAgent
+from core.agent import graph, AgentState
 
-# Global logging config
-logging.basicConfig(
-    level=logging.ERROR,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
-
-# Suppress noisy third-party logs
-logging.getLogger("httpx").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-
-# Local module logger
-logger = logging.getLogger("AI_Software_Builder")
-logger.setLevel(logging.ERROR)
-logger.propagate = True
-
-# Streamlit UI
 st.title("🧠 AI Software Builder")
 
-if "final_state" not in st.session_state:
-    st.session_state.final_state = None
+# Step 1: Goal input
+goal = st.text_input("Describe your business goal")
+if goal:
+    initial_state = AgentState(goal=goal)
+    state = graph.invoke(initial_state)
 
-if st.button("🚀 Run Agent Workflow"):
-    try:
-        agent = AIBuilderAgent()
-        final_state = agent.run()
-        st.session_state.final_state = final_state
-        st.success("✅ Agent workflow completed.")
-    except Exception as e:
-        logger.error(f"System error: {str(e)}")
-        st.error("❌ Agent execution failed.")
+    # Step 2: Show model suggestion
+    st.subheader("Suggested Model Meta")
+    st.markdown(state.model_meta)
 
-# Display results
-if st.session_state.final_state:
-    st.subheader("🧾 Generated Code")
-    st.code(st.session_state.final_state.generated_code, language="python")
+    feedback = st.text_input("Enter '1' to accept or refine the model")
+    if feedback:
+        state.model_feedback = feedback
+        state = graph.invoke(state)
 
-    st.subheader("📋 Instructions")
-    st.text_area("Instructions", st.session_state.final_state.instructions or "No instructions generated.", height=150)
+        # Step 3: Show generated code
+        st.subheader("Generated Code")
+        st.code(state.generated_code, language="python")
+
+        code_feedback = st.text_input("Enter '1' to accept or refine the code")
+        if code_feedback:
+            state.code_feedback = code_feedback
+            state = graph.invoke(state)
+
+            # Step 4: Show instructions
+            if state.instructions:
+                st.subheader("Instructions to Run")
+                st.markdown(state.instructions)
+
+            # Step 5: Show execution result
+            st.subheader("Execution Result")
+            st.text("Stdout:")
+            st.code(state.execution_result.get("stdout", ""))
+            st.text("Stderr:")
+            st.code(state.execution_result.get("stderr", ""))

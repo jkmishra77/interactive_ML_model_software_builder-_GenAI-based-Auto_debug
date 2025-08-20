@@ -5,7 +5,7 @@ from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def goal_and_model_handler_streamlit(state: AgentState) -> AgentState:
+def goal_and_model_handler(state: AgentState) -> AgentState:
     try:
         st.subheader("🎯 Define Business Goal and Select Model")
 

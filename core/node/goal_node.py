@@ -1,43 +1,56 @@
+import streamlit as st
 from core.state import AgentState
 from llm.query import query_llm
-from core.utils.logger import get_logger  
+from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def goal_and_model_handler(state: AgentState) -> AgentState:
+def codegen_node(state: AgentState) -> AgentState:
     try:
-        if not state.model_feedback:
-            goal_input = ""
-            print(" Welcome! Please describe your business goal:")
-            goal_input = input("Goal: ").strip()
-            state.goal = goal_input
-        
-        goal_input = state.goal   
-        prompt = f"Suggest the most suitable code for goal: {state.goal} and {state.model_feedback}"
-        model_meta = query_llm(prompt).strip()
+        st.subheader("⚙️ Code Generation Node")
 
-        logger.info(f"Goal: {goal_input} → Model Meta: {model_meta}")
-        
-         
-        return AgentState(
-            goal=goal_input,
-            model_meta=model_meta,
-            model_feedback=state.model_feedback,
-            code_feedback=state.code_feedback,
-            generated_code=state.generated_code,
-            instructions=state.instructions,
-            execution_result=state.execution_result
-        )
+        if state.code_feedback.strip():
+            prompt = f"""You are an expert python engineer. Generate complete runnable code starting from import statements.
+Generate the code for: {state.goal}  
+User feedback: {state.code_feedback}  
+Previous code: {state.generated_code}
 
-    except Exception as e:
-        logger.error(f"Error in goal_and_model_handler: {e}")
-         
+Use a dummy dataset where needed.
+Comment out only the line where data is read from file (e.g., df = pd.read_csv(...)).
+"""
+        else:
+            prompt = f"""Generate code as per user goal:
+{state.goal}  
+Model Meta: {state.model_meta}
+
+Use a dummy dataset where needed.
+Comment out only the line where data is read from file (e.g., df = pd.read_csv(...)).
+Ensure the rest of the code is runnable.
+"""
+
+        interim_code1 = query_llm(prompt).strip()
+
+        prompt2 = f"""If the code requires data from user, provide some toy data to run the code without any intervention. 
+Strip the initial few lines till import line is reached and give the code for:\n{interim_code1}
+
+Don't include any quotes or reply lines. Start directly from import.
+"""
+        processed_code = query_llm(prompt2).strip()
+
+        st.success("✅ Code generated successfully.")
+        st.code(processed_code, language="python")
+
         return AgentState(
             goal=state.goal,
             model_meta=state.model_meta,
             model_feedback=state.model_feedback,
             code_feedback=state.code_feedback,
-            generated_code=state.generated_code,
+            generated_code=processed_code,
             instructions=state.instructions,
             execution_result=state.execution_result
         )
+
+    except Exception as e:
+        logger.error(f"Error in codegen_node_streamlit: {e}")
+        st.error("⚠️ Error during code generation.")
+        return state

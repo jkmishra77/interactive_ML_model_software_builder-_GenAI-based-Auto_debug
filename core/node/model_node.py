@@ -1,21 +1,31 @@
+import streamlit as st
 from core.state import AgentState
-from core.utils.logger import setup_logger
-
-from core.utils.logger import get_logger   
+from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 def model_feedback_node(state: AgentState) -> AgentState:
     try:
-        print("\n Suggested Model Meta:")
-        print(state.model_meta)
-        feedback = input("Enter '1' to agree or provide feedback to refine the model: ").strip()
-        logger.info(f"User feedback: {feedback}")
+        st.subheader("🧠 Suggested Model Meta")
+        st.code(state.model_meta, language="text")
+
+        feedback_key = "model_feedback"
+        feedback = st.text_input(
+            "Enter '1' to agree or provide feedback to refine the model:",
+            value=st.session_state.get(feedback_key, "")
+        )
+
+        if feedback:
+            st.session_state[feedback_key] = feedback
+            logger.info(f"User feedback: {feedback}")
+
         return AgentState(
             goal=state.goal,
             model_meta=state.model_meta,
-            model_feedback=feedback
+            model_feedback=st.session_state.get(feedback_key, "")
         )
+
     except Exception as e:
-        logger.error(f"Error in model_feedback_node: {e}")
+        logger.error(f"Error in model_feedback_node_streamlit: {e}")
+        st.error("⚠️ Error during model feedback processing.")
         return state

@@ -1,23 +1,36 @@
+import streamlit as st
 from core.state import AgentState
-import logging
-
-from core.utils.logger import get_logger   
+from llm.query import query_llm
+from core.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def model_feedback_node(state: AgentState) -> AgentState:
+def goal_and_model_handler(state: AgentState) -> AgentState:
     try:
-        print("\n Suggested Model Meta:")
-        print(state.model_meta)
+        st.subheader("🎯 Define Business Goal and Select Model")
 
-        feedback = input("Enter '1' to agree or provide feedback to refine the model: ").strip()
-        logger.info(f"User feedback: {feedback}")
-        
-         
+        goal_key = "goal_input"
+        if not state.model_feedback:
+            goal_input = st.text_input(
+                "Describe your business goal:",
+                value=st.session_state.get(goal_key, "")
+            )
+            if goal_input:
+                st.session_state[goal_key] = goal_input
+                state.goal = goal_input
+
+        goal_input = state.goal or st.session_state.get(goal_key, "")
+        if goal_input:
+            prompt = f"Suggest the most suitable code for goal: {goal_input} and {state.model_feedback}"
+            model_meta = query_llm(prompt).strip()
+            logger.info(f"Goal: {goal_input} → Model Meta: {model_meta}")
+        else:
+            model_meta = state.model_meta
+
         return AgentState(
-            goal=state.goal,
-            model_meta=state.model_meta,
-            model_feedback=feedback,
+            goal=goal_input,
+            model_meta=model_meta,
+            model_feedback=state.model_feedback,
             code_feedback=state.code_feedback,
             generated_code=state.generated_code,
             instructions=state.instructions,
@@ -25,5 +38,6 @@ def model_feedback_node(state: AgentState) -> AgentState:
         )
 
     except Exception as e:
-        logger.error(f"Error in model_feedback_node: {e}")
+        logger.error(f"Error in goal_and_model_handler_streamlit: {e}")
+        st.error("⚠️ Error while processing goal and model selection.")
         return state

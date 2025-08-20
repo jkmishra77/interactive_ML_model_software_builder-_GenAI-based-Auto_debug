@@ -1,5 +1,5 @@
 from groq import Groq
-from configs.settings import settings
+from core.configs.settings import settings
 import logging
 
 from core.utils.logger import get_logger  # FIXED

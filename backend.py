@@ -1,16 +1,23 @@
-# backend.py
+from groq import Groq
+from pydantic import BaseModel, Field
+import subprocess
+import tempfile
+import os
+import logging
+from typing import Dict
+from dotenv import load_dotenv
 
-from langgraph.graph import StateGraph, END, START
-from pydantic import BaseModel
-import subprocess, tempfile, os, logging
+# Load environment variables
+load_dotenv()
 
 # Logging setup
-logging.basicConfig(level=logging.ERROR, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("AI_Software_Builder")
-logger.setLevel(logging.ERROR)
-logger.propagate = True
 
-# Agent state
+# Configuration
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+LLM_MODEL = os.environ.get("LLM_MODEL", "llama-3.3-70b-versatile")
+
 class AgentState(BaseModel):
     goal: str = ""
     model_meta: str = ""
@@ -18,130 +25,123 @@ class AgentState(BaseModel):
     code_feedback: str = ""
     generated_code: str = ""
     instructions: str = ""
-    execution_result: dict = {}
+    execution_result: Dict = Field(default_factory=dict)
 
-# Placeholder for LLM query
-def query_llm(prompt: str, model: str = settings.LLM_MODEL) -> str:
+# Initialize Groq client
+try:
+    groq_client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
+except Exception as e:
+    logger.error(f"Groq init failed: {e}")
+    groq_client = None
+
+def query_llm(prompt: str) -> str:
+    """Query the LLM with proper error handling"""
     try:
         if not groq_client:
             return "Error: LLM client not initialized"
-            
+        
         response = groq_client.chat.completions.create(
-            model=model,
+            model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"LLM query failed: {e}")
+        return f"Error: {str(e)}"
 
-# Node 1: Goal and model suggestion
-def goal_and_model_handler(state: AgentState) -> AgentState:
+def goal_and_model_handler(goal: str, model_feedback: str = "") -> str:
+    """Node 1: Collect goal and suggest model - ORIGINAL PROMPT"""
     try:
-        prompt = f"Suggest the most suitable code for goal: {state.goal} and feedback: {state.model_feedback}"
+        prompt = f"Suggest the most suitable code for goal: {goal} and {model_feedback}"
         model_meta = query_llm(prompt).strip()
-        return state.copy(update={"model_meta": model_meta})
+        return model_meta
     except Exception as e:
-        logger.error(f"goal_and_model_handler: {e}")
-        return state
+        logger.error(f"Error in goal_and_model_handler: {e}")
+        return f"Error: {str(e)}"
 
-# Node 2: Model feedback
-def model_feedback_node(state: AgentState) -> AgentState:
-    return state  # Feedback handled in frontend
-
-# Node 3: Code generation
-def codegen_node(state: AgentState) -> AgentState:
+def codegen_node(goal: str, model_meta: str, code_feedback: str = "", previous_code: str = "") -> str:
+    """Node 3: Code generation by LLM - ORIGINAL PROMPT"""
     try:
-        if state.code_feedback.strip():
-            prompt = f"""Generate complete runnable code for: {state.goal}
-Feedback: {state.code_feedback}
-Previous code: {state.generated_code}
-Use dummy data where needed. Comment out file reads."""
+        if code_feedback.strip():
+            prompt = f"""You are an expert python engineer Generate complete runnable code start from import library, 
+            generate the code for {goal}  \n {code_feedback} \n  {previous_code}\n
+
+Use a dummy dataset where needed.
+Comment out only the line where data is read from file (e.g., df = pd.read_csv(...)).
+Generate complete runnable code start from import library."""
         else:
-            prompt = f"""Generate code for goal: {state.goal}
-Model Meta: {state.model_meta}
-Use dummy data. Comment out file reads."""
+            prompt = f"""Generate code as per user goal:
+{goal}\n 
+Model Meta: {model_meta}
+Use a dummy dataset where needed.
+Comment out only the line where data is read from file (e.g., df = pd.read_csv(...)).
+Ensure the rest of the code is runnable."""
 
-        interim_code = query_llm(prompt).strip()
-        processed_prompt = f"""Strip any preamble. Start from 'import'. Ensure code runs with dummy data.
-Code:\n{interim_code}"""
-        processed_code = query_llm(processed_prompt).strip()
+        interim_code1 = query_llm(prompt).strip()
+        
+        prompt2 = f'''if the code required data from user, you provide some toy data to run the code without any intervention. strip the initial few line till import line reach and give the code for {interim_code1}. 
+        dont include any mark like ''' ''' at start and end dont include any reply line like <Here is the code with the initial lines stripped till the import line:> give the clean code only so taht it can be run by copy paste. final instruction output must be like
+        example 1
+        nothing should be here like this is you python code, pyhon code is here etc
+        nothing should be here like '''  '''  """  """
+        import pandas as pd
+        import numpy as np
+        main body here
 
-        return state.copy(update={"generated_code": processed_code})
+
+        
+        '''
+        
+        processed_code = query_llm(prompt2).strip()
+        return processed_code
+
     except Exception as e:
-        logger.error(f"codegen_node: {e}")
-        return state
+        logger.error(f"Error in codegen_node: {e}")
+        return f"Error: {str(e)}"
 
-# Node 4: Code feedback
-def code_feedback_node(state: AgentState) -> AgentState:
+def generate_instructions(code: str) -> str:
+    """Node 4: Code feedback - instructions part - ORIGINAL PROMPT"""
     try:
-        if state.code_feedback.strip() == "1":
-            prompt = f"Write instructions to run this code:\n{state.generated_code}"
-            instructions = query_llm(prompt).strip()
-            return state.copy(update={"instructions": instructions})
-        return state
+        prompt = f'''write the instructions to run this code:\n{code}'''
+        instructions = query_llm(prompt).strip()
+        return instructions
     except Exception as e:
-        logger.error(f"code_feedback_node: {e}")
-        return state
+        logger.error(f"Error generating instructions: {e}")
+        return f"Error: {str(e)}"
 
-# Node 5: Run code
-def run_code_subprocess(state: AgentState) -> AgentState:
-    code = state.generated_code
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-        f.write(code)
-        path = f.name
-
+def run_code_subprocess(code: str) -> Dict:
+    """Node 5: run code in subprocess - ORIGINAL LOGIC"""
     try:
-        result = subprocess.run(["python", path], capture_output=True, text=True)
-        execution_result = {
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "exit_code": result.returncode,
-            "success": 1
-        }
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            path = f.name
+
+        try:
+            result = subprocess.run(["python", path], capture_output=True, text=True)
+            execution_result = {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "exit_code": result.returncode,
+                "success": 1
+            }
+        except Exception as e:
+            execution_result = {
+                "stdout": "",
+                "stderr": str(e),
+                "exit_code": -1,
+                "success": 0
+            }
+        finally:
+            os.remove(path)
+        
+        return execution_result
+
     except Exception as e:
-        execution_result = {
+        logger.error(f"Error in run_code_subprocess: {e}")
+        return {
             "stdout": "",
             "stderr": str(e),
             "exit_code": -1,
             "success": 0
         }
-    finally:
-        os.remove(path)
-
-    return state.copy(update={"execution_result": execution_result})
-
-# Routers
-def model_router(state: AgentState):
-    return "codegen_node" if state.model_feedback.strip() == "1" else "goal_and_model_handler"
-
-def codegen_router(state: AgentState):
-    return "run_code_subprocess" if state.code_feedback.strip() == "1" else "codegen_node"
-
-def run_code_router(state: AgentState):
-    return "end" if state.execution_result.get("success", 0) == 1 else "codegen_node"
-
-# Build graph
-def build_graph():
-    builder = StateGraph(AgentState)
-    builder.add_node("goal_and_model_handler", goal_and_model_handler)
-    builder.add_node("model_feedback", model_feedback_node)
-    builder.add_node("codegen_node", codegen_node)
-    builder.add_node("code_feedback_node", code_feedback_node)
-    builder.add_node("run_code_subprocess", run_code_subprocess)
-
-    builder.add_edge(START, "goal_and_model_handler")
-    builder.add_edge("goal_and_model_handler", "model_feedback")
-    builder.add_edge("codegen_node", "code_feedback_node")
-    builder.add_conditional_edges("model_feedback", model_router, {
-        "codegen_node": "codegen_node",
-        "goal_and_model_handler": "goal_and_model_handler"
-    })
-    builder.add_conditional_edges("code_feedback_node", codegen_router, {
-        "run_code_subprocess": "run_code_subprocess",
-        "codegen_node": "codegen_node"
-    })
-    builder.add_conditional_edges("run_code_subprocess", run_code_router, {
-        "end": END,
-        "codegen_node": "codegen_node"
-    })
-
-    return builder.compile()

@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from uuid import uuid4
 from core.state import AgentState
 from core.utils.logger import get_logger
 
@@ -10,20 +10,30 @@ def model_feedback_node(state: AgentState) -> AgentState:
         st.subheader("🧠 Suggested Model Meta")
         st.code(state.model_meta, language="text")
 
-        timestamp = datetime.now().strftime("%S%f")  # e.g., "42123456"
-        feedback_key = f"model_feedback_{timestamp}"
+        # Initialize step tracker
+        if "feedback_step" not in st.session_state:
+            st.session_state.feedback_step = 1
 
-        with st.form("model_feedback_form"):
-            feedback = st.text_input(
-                "Enter '1' to agree or provide feedback to refine the model:",
-                value=st.session_state.get(feedback_key, ""),
-                key=feedback_key
-            )
-            submitted = st.form_submit_button("Submit Feedback")
+        # Step 1: Confirm model meta visibility
+        if st.session_state.feedback_step == 1:
+            if st.button("Proceed to Feedback"):
+                st.session_state.feedback_step = 2
 
-        if submitted:
-            st.session_state[feedback_key] = feedback
-            logger.info(f"User feedback: {feedback}")
+        # Step 2: Feedback Form
+        if st.session_state.feedback_step >= 2:
+            feedback_key = f"model_feedback_{uuid4().hex}"
+            with st.form(key=f"model_feedback_form_{uuid4().hex}"):
+                feedback = st.text_input(
+                    "Enter '1' to agree or provide feedback to refine the model:",
+                    value=st.session_state.get(feedback_key, ""),
+                    key=feedback_key
+                )
+                submitted = st.form_submit_button("Submit Feedback")
+
+            if submitted:
+                st.session_state[feedback_key] = feedback
+                logger.info(f"User feedback: {feedback}")
+                st.session_state.feedback_step = 3  # Optional: advance to next node
 
         return AgentState(
             goal=state.goal,

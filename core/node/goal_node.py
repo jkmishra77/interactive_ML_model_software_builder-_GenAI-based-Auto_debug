@@ -1,5 +1,4 @@
 import streamlit as st
-from uuid import uuid4
 from core.state import AgentState
 from llm.query import query_llm
 from core.utils.logger import get_logger
@@ -10,51 +9,57 @@ def goal_and_model_handler(state: AgentState) -> AgentState:
     try:
         st.subheader("🎯 Define Business Goal and Select Model")
 
-        # Initialize step tracker
+        # Initialize session state for this node
         if "goal_step" not in st.session_state:
             st.session_state.goal_step = 1
+        if "goal_key" not in st.session_state:
+            st.session_state.goal_key = f"goal_input_{st.session_state.get('session_id', 'default')}"
+        if "feedback_key" not in st.session_state:
+            st.session_state.feedback_key = f"model_feedback_{st.session_state.get('session_id', 'default')}"
 
         # Step 1: Business Goal
         if st.session_state.goal_step == 1:
-            goal_key = f"goal_input_{uuid4().hex}"
-            goal_input = st.text_input("Step 1: Describe your business goal", key=goal_key)
+            goal_input = st.text_input(
+                "Step 1: Describe your business goal", 
+                key=st.session_state.goal_key
+            )
 
-            if goal_input:
-                if st.button("Next: Proceed to Model Feedback"):
-                    st.session_state.goal_step = 2
-                    state.goal = goal_input
+            if goal_input and st.button("Next: Proceed to Model Feedback", key="goal_next_btn"):
+                st.session_state.goal_step = 2
+                state.goal = goal_input
+                st.rerun()
 
         # Step 2: Model Feedback
-        if st.session_state.goal_step == 2:
-            feedback_key = f"model_feedback_{uuid4().hex}"
-            model_feedback = st.text_area("Step 2: Provide model feedback", key=feedback_key)
+        elif st.session_state.goal_step == 2:
+            model_feedback = st.text_area(
+                "Step 2: Provide model feedback", 
+                key=st.session_state.feedback_key
+            )
 
-            if model_feedback:
-                if st.button("Next: Generate Model Suggestion"):
-                    st.session_state.goal_step = 3
-                    state.model_feedback = model_feedback
+            if model_feedback and st.button("Next: Generate Model Suggestion", key="feedback_next_btn"):
+                st.session_state.goal_step = 3
+                state.model_feedback = model_feedback
+                st.rerun()
 
         # Step 3: Model Suggestion
-        if st.session_state.goal_step == 3:
-            goal_input = state.goal
-            model_feedback = state.model_feedback
-
-            if goal_input and model_feedback:
-                prompt = f"Suggest the most suitable code for goal: {goal_input} and {model_feedback}"
-                model_meta = query_llm(prompt).strip()
-                logger.info(f"Goal: {goal_input} → Model Meta: {model_meta}")
+        elif st.session_state.goal_step == 3:
+            if state.goal and state.model_feedback:
+                with st.spinner("Generating model suggestion..."):
+                    prompt = f"Suggest the most suitable code for goal: {state.goal} and {state.model_feedback}"
+                    model_meta = query_llm(prompt).strip()
+                    logger.info(f"Goal: {state.goal} → Model Meta: {model_meta}")
             else:
                 model_meta = state.model_meta
 
             st.success("✅ Model suggestion generated.")
             st.code(model_meta, language="text")
 
-        else:
-            model_meta = state.model_meta
+            if st.button("Continue to Next Step", key="model_continue_btn"):
+                st.session_state.goal_step = 4
 
         return AgentState(
             goal=state.goal,
-            model_meta=model_meta,
+            model_meta=state.model_meta,
             model_feedback=state.model_feedback,
             code_feedback=state.code_feedback,
             generated_code=state.generated_code,

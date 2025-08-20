@@ -6,7 +6,7 @@ __pycache__/
 .env
 .venv/
 myenv/
-
+.streamlit
 # Secrets
 *.env
 secrets.toml

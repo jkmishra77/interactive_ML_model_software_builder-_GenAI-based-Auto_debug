@@ -14,6 +14,7 @@ def goal_and_model_handler(state: AgentState) -> AgentState:
             st.session_state.goal_step = 1
         if "goal_key" not in st.session_state:
             st.session_state.goal_key = f"goal_input_{st.session_state.get('session_id', 'default')}"
+            st.stop()
         if "feedback_key" not in st.session_state:
             st.session_state.feedback_key = f"model_feedback_{st.session_state.get('session_id', 'default')}"
 

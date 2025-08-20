@@ -24,6 +24,7 @@ def goal_and_model_handler(state: AgentState) -> AgentState:
                 "Step 1: Describe your business goal", 
                 key=st.session_state.goal_key
             )
+            st.stop()
 
             if goal_input and st.button("Next: Proceed to Model Feedback", key="goal_next_btn"):
                 st.session_state.goal_step = 2

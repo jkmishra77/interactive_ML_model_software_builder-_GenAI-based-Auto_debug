@@ -23,6 +23,6 @@ streamlit-option-menu>=0.3.6
 scikit-learn
 pandas
 numpy
-python-dateutil
+python == 3.11.*
 pip==25.2
 matplotlib

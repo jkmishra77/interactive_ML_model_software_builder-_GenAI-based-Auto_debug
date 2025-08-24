@@ -10,15 +10,17 @@ loguru>=0.7.0
 rich>=13.0.0
 
 # Tooling & Routing
-openai>=1.0.0  # if fallback or dual LLM support
-tiktoken>=0.5.0  # for token counting
-httpx>=0.24.0  # async HTTP client
-python-dotenv>=1.0.0  # for local env management
+openai>=1.0.0
+tiktoken>=0.5.0
+httpx>=0.24.0
+python-dotenv>=1.0.0
 
 # Streamlit Enhancements
 streamlit-extras>=0.3.0
 streamlit-option-menu>=0.3.6
+
+# ML & Data
 scikit-learn
 pandas
-numpy   
-pip==25.2
+numpy
+python-dateutil

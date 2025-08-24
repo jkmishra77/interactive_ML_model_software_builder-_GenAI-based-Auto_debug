@@ -20,9 +20,6 @@ streamlit-extras>=0.3.0
 streamlit-option-menu>=0.3.6
 
 # ML & Data
-scikit-learn
+
 pandas
 numpy
-python == 3.11.*
-pip==25.2
-matplotlib

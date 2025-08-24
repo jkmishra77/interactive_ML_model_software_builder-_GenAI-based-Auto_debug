@@ -24,3 +24,5 @@ scikit-learn
 pandas
 numpy
 python-dateutil
+pip==25.2
+matplotlib

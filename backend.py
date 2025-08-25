@@ -83,7 +83,8 @@ Ensure the rest of the code is runnable."""
         prompt2= f''' you are a pythen expert. preprocess the code and provide runable code. 
         follw these rules  \n (1) strip the intial few line till import line till line start from import and process it : \n {interim_code1} \n\n 
         (2). dont include any mark like at begining like < ' , " , ```, etc > dont include any output line   like   <"```python", "Here is the code' , "python code">  \n
-          (3) output shoul be code snippet  ensure code runable by capy paste in python file and run it. \n'''
+          (3) output shoul be code snippet  ensure code runable by capy paste in python file and run it. \n
+          (4) no external librery is allowed to import '''
         processed_code = query_llm(prompt2).strip()
         return processed_code
 

@@ -53,7 +53,7 @@ def query_llm(prompt: str) -> str:
 def goal_and_model_handler(goal: str, model_feedback: str = "") -> str:
     """Node 1: Collect goal and suggest model - ORIGINAL PROMPT"""
     try:
-        prompt = f"Suggest the most suitable code for goal: {goal} and {model_feedback}"
+        prompt = f"Suggest the most suitable but minimal code for goal: {goal} and {model_feedback}"
         model_meta = query_llm(prompt).strip()
         return model_meta
     except Exception as e:
@@ -64,8 +64,8 @@ def codegen_node(goal: str, model_meta: str, code_feedback: str = "", previous_c
     """Node 3: Code generation by LLM - ORIGINAL PROMPT"""
     try:
         if code_feedback.strip():
-            prompt = f"""You are an expert python engineer,  Generate complete runnable  
-            generate the code for {goal}  \n {code_feedback} \n  {previous_code}\n
+            prompt = f"""You are an expert python engineer,   
+            generate simple runable code for {goal}  \n {code_feedback} \n  {previous_code}\n
 
 Use a dummy dataset where needed.
 Comment out only the line where data is read from file (e.g., df = pd.read_csv(...)).
